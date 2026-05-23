@@ -22,10 +22,12 @@ waiting, and lets you approve or deny right from the device.
 
 ## Hardware
 
-The firmware targets ESP32 with the Arduino framework. As written, it
-depends on the M5StickCPlus library for its display, IMU, and button
-drivers—so you'll need that board, or a fork that swaps those drivers for
-your own pin layout.
+This fork targets [**M5StickS3**](https://shop.m5stack.com/products/m5sticks3-esp32s3-mini-iot-dev-kit)
+(ESP32-S3, ST7789P3 135×240, BMI270, M5PM1) on the Arduino framework via
+M5Unified. A thin `src/m5_compat.h` shim bridges the original
+M5StickCPlus call sites onto M5Unified so the rest of the firmware stays
+untouched. To run on M5StickC Plus instead, use the upstream
+[anthropics/claude-desktop-buddy](https://github.com/anthropics/claude-desktop-buddy).
 
 ## Flashing
 
@@ -34,14 +36,18 @@ Install
 then:
 
 ```bash
-pio run -t upload
+pio run -e m5sticks3 -t upload
 ```
 
 If you're starting from a previously-flashed device, wipe it first:
 
 ```bash
-pio run -t erase && pio run -t upload
+pio run -e m5sticks3 -t erase && pio run -e m5sticks3 -t upload
 ```
+
+If esptool can't connect, press and hold the power button on the
+M5StickS3 for a few seconds to force the bootloader to enumerate over
+USB-Serial-JTAG before retrying.
 
 Once running, you can also wipe everything from the device itself: **hold A
 → settings → reset → factory reset → tap twice**.
@@ -144,7 +150,7 @@ If you're iterating on a character and would rather skip the BLE round-trip,
 | `sleep`     | bridge not connected        | eyes closed, slow breathing |
 | `idle`      | connected, nothing urgent   | blinking, looking around    |
 | `busy`      | sessions actively running   | sweating, working           |
-| `attention` | approval pending            | alert, **LED blinks**       |
+| `attention` | approval pending            | alert, **beep chirp**       |
 | `celebrate` | level up (every 50K tokens) | confetti, bouncing          |
 | `dizzy`     | you shook the stick         | spiral eyes, wobbling       |
 | `heart`     | approved in under 5s        | floating hearts             |
@@ -154,6 +160,7 @@ If you're iterating on a character and would rather skip the BLE round-trip,
 ```
 src/
   main.cpp       — loop, state machine, UI screens
+  m5_compat.h    — M5StickCPlus → M5Unified shim for the S3 port
   buddy.cpp      — ASCII species dispatch + render helpers
   buddies/       — one file per species, seven anim functions each
   ble_bridge.cpp — Nordic UART service, line-buffered TX/RX
